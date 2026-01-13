@@ -5,7 +5,7 @@ import numpy as np
 import random
 from concurrent.futures import ThreadPoolExecutor
 
-video_path = "../Videoer/Magnus.mp4"
+video_path = "Videoer/Daniel.mp4"
 num_screenshots = 10
 start_index = 0
 output_size = (512, 512)
@@ -63,9 +63,6 @@ while frame_idx < total_frames:
     ret, frame = cap.read()
     if not ret:
         break
-
-    # 🔥 ROTER 90° TIL HØJRE (VIGTIG)
-    frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
     if frame_idx in frame_idx_set:
         file_idx = frame_indices.index(frame_idx)
