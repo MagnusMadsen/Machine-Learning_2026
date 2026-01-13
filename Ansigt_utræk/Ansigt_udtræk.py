@@ -5,14 +5,15 @@ import numpy as np
 import random
 from concurrent.futures import ThreadPoolExecutor
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
 video_paths = [
-    "Ansigt_utræk/Videoer/Daniel.MOV",
-    "Ansigt_utræk/Videoer/Magnus.MOV",
+    os.path.join(script_dir, "Videoer", "Daniel.MOV"),
+    os.path.join(script_dir, "Videoer", "Magnus.MOV"),
 ]
 num_screenshots = 10
 start_index = 0
 output_size = (512, 512)
-base_output_dir = "screenshots"
+base_output_dir = os.path.join(script_dir, "screenshots")
 os.makedirs(base_output_dir, exist_ok=True)
 
 cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
@@ -51,9 +52,15 @@ def process_frame(frame, file_idx, output_dir):
     cv2.imwrite(save_path, face_png)
 
 for video_i, video_path in enumerate(video_paths):
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"Video file not found: {video_path}")
+
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        raise RuntimeError(f"Cannot open video: {video_path}")
+        raise RuntimeError(
+            f"Cannot open video with OpenCV: {video_path}. "
+            f"Tip: Install FFmpeg and ensure your OpenCV build supports .MOV (H.264/HEVC)."
+        )
     # Create per-video output folder (e.g., screenshots/Daniel, screenshots/Magnus)
     video_name = os.path.splitext(os.path.basename(video_path))[0]
     output_dir = os.path.join(base_output_dir, video_name)
