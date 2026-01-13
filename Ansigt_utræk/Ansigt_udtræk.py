@@ -5,23 +5,27 @@ import numpy as np
 import random
 from concurrent.futures import ThreadPoolExecutor
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-video_paths = [
-    os.path.join(script_dir, "Videoer", "Daniel.MOV"),
-    os.path.join(script_dir, "Videoer", "Magnus.MOV"),
-]
+video_path = "../Videoer/Magnus.mp4"
 num_screenshots = 10
 start_index = 0
 output_size = (512, 512)
-base_output_dir = os.path.join(script_dir, "screenshots")
-os.makedirs(base_output_dir, exist_ok=True)
+output_dir = "screenshots"
+os.makedirs(output_dir, exist_ok=True)
+
+cap = cv2.VideoCapture(video_path)
+if not cap.isOpened():
+    raise RuntimeError("Cannot open video!")
+
+total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+frame_indices = sorted(random.sample(range(total_frames), num_screenshots))
 
 cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 face_cascade = cv2.CascadeClassifier(cascade_path)
 if face_cascade.empty():
     raise RuntimeError("Cannot load Haar cascade")
 
-def process_frame(frame, file_idx, output_dir):
+def process_frame(frame, file_idx):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(
         gray, scaleFactor=1.05, minNeighbors=3, minSize=(80, 80)
@@ -51,55 +55,27 @@ def process_frame(frame, file_idx, output_dir):
     save_path = os.path.join(output_dir, f"face_{start_index + file_idx}.png")
     cv2.imwrite(save_path, face_png)
 
-for video_i, video_path in enumerate(video_paths):
-    if not os.path.exists(video_path):
-        raise FileNotFoundError(f"Video file not found: {video_path}")
+frames_to_process = []
+frame_idx_set = set(frame_indices)
 
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        raise RuntimeError(
-            f"Cannot open video with OpenCV: {video_path}. "
-            f"Tip: Install FFmpeg and ensure your OpenCV build supports .MOV (H.264/HEVC)."
-        )
-    # Create per-video output folder (e.g., screenshots/Daniel, screenshots/Magnus)
-    video_name = os.path.splitext(os.path.basename(video_path))[0]
-    output_dir = os.path.join(base_output_dir, video_name)
-    os.makedirs(output_dir, exist_ok=True)
+frame_idx = 0
+while frame_idx < total_frames:
+    ret, frame = cap.read()
+    if not ret:
+        break
 
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    if total_frames <= 0:
-        cap.release()
-        raise RuntimeError(f"Video has no frames (or cannot read frame count): {video_path}")
+    # 🔥 ROTER 90° TIL HØJRE (VIGTIG)
+    frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
-    # Ensure we don't request more screenshots than there are frames
-    n = min(num_screenshots, total_frames)
-    frame_indices = sorted(random.sample(range(total_frames), n))
+    if frame_idx in frame_idx_set:
+        file_idx = frame_indices.index(frame_idx)
+        frames_to_process.append((frame.copy(), file_idx))
 
-    frames_to_process = []
-    frame_idx_set = set(frame_indices)
+    frame_idx += 1
 
-    frame_idx = 0
-    while frame_idx < total_frames:
-        ret, frame = cap.read()
-        if not ret:
-            break
+cap.release()
 
-        # 🔥 ROTER 90° TIL HØJRE (VIGTIG)
-        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+with ThreadPoolExecutor(max_workers=8) as executor:
+    executor.map(lambda args: process_frame(*args), frames_to_process)
 
-        if frame_idx in frame_idx_set:
-            file_idx = frame_indices.index(frame_idx)
-            frames_to_process.append((frame.copy(), file_idx, output_dir))
-
-        frame_idx += 1
-
-    cap.release()
-
-    def _run(args):
-        frame, file_idx, out_dir = args
-        process_frame(frame, file_idx, out_dir)
-
-    with ThreadPoolExecutor(max_workers=8) as executor:
-        executor.map(_run, frames_to_process)
-
-    print(f"Done! {n} face PNGs saved from {os.path.basename(video_path)}.")
+print(f"Done! {num_screenshots} face PNGs saved.")
