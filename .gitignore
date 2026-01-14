@@ -1,2 +1,11 @@
 .venv
 Facenet - dataset
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.svg
+
