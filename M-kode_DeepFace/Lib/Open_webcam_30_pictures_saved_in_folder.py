@@ -4,7 +4,7 @@ import uuid
 import cv2
 
 
-IMAGES_PATH = os.path.join('data','Images')
+IMAGES_PATH = os.path.join('data','Raw', 'Images')
 number_images = 30
 
 cap = cv2.VideoCapture(0)
@@ -16,7 +16,7 @@ for imgnum in range(number_images):
     cv2.imshow('frame', frame)
     time.sleep(0.5)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord('q'): 
         break
 cap.release()
 cv2.destroyAllWindows()
