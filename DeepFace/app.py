@@ -2,9 +2,9 @@ import streamlit as st
 import cv2
 import numpy as np
 
-import verify_face
-import verify_webcam_multiface
-import verify_webcam_multiplayer
+import web_f as verify_face
+import web_mf as verify_webcam_multiface
+import web_mp as verify_webcam_multiplayer
 
 if "screenshot" not in st.session_state:
     st.session_state["screenshot"] = None
