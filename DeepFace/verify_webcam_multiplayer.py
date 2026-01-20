@@ -1,8 +1,3 @@
-#| Model      | MATCH |
-#| ---------- | ----- |
-#| ArcFace    | ~0.68 |
-#| FaceNet512 | ~0.75 |
-
 import cv2
 import numpy as np
 from deepface import DeepFace
